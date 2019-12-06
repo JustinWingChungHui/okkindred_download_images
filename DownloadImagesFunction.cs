@@ -91,7 +91,7 @@ namespace okkindred_download_images
             var outputMemStream = new MemoryStream();            
             using (var zipStream = new ZipOutputStream(outputMemStream))
             {
-                zipStream.SetLevel(3); //0-9, 9 being the highest level of compression
+                zipStream.SetLevel(9); //0-9, 9 being the highest level of compression
 
                 // Cycles through downloaded images as they complete
                 while (downloadTasks.Count > 0)
