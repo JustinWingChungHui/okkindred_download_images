@@ -6,8 +6,8 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
 using System.Net.Http;
 using System.Collections.Generic;
 using ICSharpCode.SharpZipLib.Zip;
@@ -28,13 +28,14 @@ namespace okkindred_download_images
             ILogger log,
             ExecutionContext context)
         {
+
             log.LogInformation("okkindred_download_images C# HTTP trigger function processed a request.");
 
             // Azure function config
             // https://blog.jongallant.com/2018/01/azure-function-config/
 
             if (config == null)
-            { 
+            {
                 config = new ConfigurationBuilder()
                     .SetBasePath(context.FunctionAppDirectory)
                     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
@@ -78,7 +79,7 @@ namespace okkindred_download_images
 
             if (!await Authenticated(data.token, log))
             {
-                return new BadRequestObjectResult("invalid token");
+                return new UnauthorizedResult();
             }
 
             var downloadTasks = new List<Task<DownloadData>>();
@@ -88,7 +89,7 @@ namespace okkindred_download_images
                 downloadTasks.Add(GetImageStream(image));
             }
 
-            var outputMemStream = new MemoryStream();            
+            var outputMemStream = new MemoryStream();
             using (var zipStream = new ZipOutputStream(outputMemStream))
             {
                 zipStream.SetLevel(9); //0-9, 9 being the highest level of compression
@@ -103,7 +104,7 @@ namespace okkindred_download_images
 
                     var newEntry = new ZipEntry(downloadData.filename);
                     newEntry.DateTime = DateTime.Now;
-   
+
                     zipStream.PutNextEntry(newEntry);
 
                     StreamUtils.Copy(downloadData.stream, zipStream, new byte[4096]);
@@ -123,7 +124,7 @@ namespace okkindred_download_images
                 FileDownloadName = data.zip_filename,
             };
 
-            return response;           
+            return response;
         }
 
         private static async Task<bool> Authenticated(string token, ILogger log)
@@ -139,19 +140,19 @@ namespace okkindred_download_images
 
                 return result.StatusCode == System.Net.HttpStatusCode.OK;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 log.LogInformation(ex.Message);
                 return false;
             }
 
-            
+
         }
 
         private static async Task<DownloadData> GetImageStream(string file)
         {
             var downloadData = new DownloadData(file);
-            var response = await httpClient.GetAsync(file);            
+            var response = await httpClient.GetAsync(file);
             downloadData.stream = await response.Content.ReadAsStreamAsync();
 
             return downloadData;
